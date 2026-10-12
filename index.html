@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compila Modulo — Fronte/Retro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --ink:#101828; --ink2:#17223a; --mut:#667085; --faint:#98a2b3;
+  --line:#e4e7ec; --bg:#f5f7f9; --card:#ffffff;
+  --blue:#2563eb; --blue-soft:rgba(37,99,235,.06); --amber:#b45309;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(#dde3ea 1px,transparent 1px) 0 0/24px 24px,var(--bg);
+  min-height:100vh;
+}
+button{font-family:inherit;cursor:pointer}
+[hidden]{display:none !important}
+
+/* ── header ── */
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 24px;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 3px rgba(16,24,40,.05)}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{position:relative;width:38px;height:38px;flex:0 0 auto}
+.logo i{position:absolute;border-radius:5px;display:block;transition:transform .35s cubic-bezier(.34,1.4,.64,1)}
+.logo .l1{width:24px;height:30px;left:1px;top:4px;background:var(--blue);transform:rotate(-7deg)}
+.logo .l2{width:24px;height:30px;right:1px;top:2px;background:#dce7ff;border:2px solid var(--blue)}
+.brand:hover .l1{transform:rotate(-13deg) translateX(-2px)}
+.brand:hover .l2{transform:rotate(5deg) translateX(2px)}
+.brand h1{margin:0;font:800 19px/1.1 "Sora",sans-serif;letter-spacing:-.02em}
+.brand small{display:block;font:400 10.5px/1.5 "IBM Plex Mono",monospace;color:var(--mut);letter-spacing:.08em;text-transform:uppercase}
+.spacer{flex:1}
+.src{display:flex;align-items:center;gap:9px;font:400 12px "IBM Plex Mono",monospace;color:var(--mut);
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 13px;max-width:300px}
+.src b{color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src .dot{width:8px;height:8px;border-radius:50%;background:#d0d5dd;flex:0 0 auto;transition:.3s}
+.src.ok .dot{background:#12b76a;box-shadow:0 0 0 3px rgba(18,183,106,.18)}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:8px;padding:10px 15px;
+  font:600 13px "Sora",sans-serif;transition:.18s;border:1px solid transparent}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-1px)}
+.btn.prim{background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+.btn.prim:hover{background:#1d4fd7;transform:translateY(-1px);box-shadow:0 8px 18px rgba(37,99,235,.35)}
+.btn:disabled{opacity:.45;pointer-events:none}
+
+/* ── main ── */
+main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:26px;padding:28px;max-width:1720px;margin:0 auto}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  box-shadow:0 2px 6px rgba(16,24,40,.05);animation:rise .5s cubic-bezier(.22,1,.36,1) both}
+.panel:nth-child(2){animation-delay:.08s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.ph{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.tag{font:800 11px "Sora";letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--ink);padding:4px 10px;border-radius:5px}
+.panel:nth-child(2) .tag{background:var(--blue)}
+.ph .info{font:400 11px "IBM Plex Mono",monospace;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warn{font:600 10.5px "IBM Plex Sans";color:var(--amber);background:#fff8e6;border:1px solid #f5d893;padding:3px 8px;border-radius:5px;white-space:nowrap}
+.ph button{margin-left:auto;font:600 11px "IBM Plex Sans";letter-spacing:.04em;color:var(--mut);
+  background:none;border:1px solid var(--line);border-radius:6px;padding:5px 10px;transition:.15s}
+.ph button:hover{color:var(--blue);border-color:var(--blue)}
+.sheet-zone{display:flex;justify-content:center;background:#eef1f4;padding:22px 18px;min-height:200px}
+.sheet{position:relative;display:inline-block;line-height:0;animation:sheetin .45s ease both;isolation:isolate}
+@keyframes sheetin{from{opacity:0;transform:scale(.985)}}
+.sheet img{display:block;max-width:100%;max-height:78vh;border:1px solid #d3dae3;background:#fff;box-shadow:0 10px 30px rgba(16,24,40,.14)}
+.ov{position:absolute;inset:0;line-height:1.4}
+
+/* slot immagine mancante */
+.slot{align-self:center;width:100%;max-width:420px;border:2px dashed #c3cdd9;border-radius:12px;background:#fff;text-align:center;padding:44px 24px;transition:.2s}
+.slot.over{border-color:var(--blue);background:var(--blue-soft);transform:scale(1.01)}
+.slot .big{font:800 15px "Sora";margin:0 0 4px}
+.slot p{margin:0 0 16px;color:var(--mut);font-size:13px}
+
+/* ── campi (fissi, solo compilabili) ── */
+.f{position:absolute}
+.f input{width:100%;height:100%;border:0;border-radius:2px;outline:none;background:transparent;
+  font:500 13px/1.2 "IBM Plex Sans",sans-serif;color:var(--ink2);padding:0 4px;transition:background .15s}
+.f input.left{text-align:left}
+.f input.center{text-align:center}
+.f input::placeholder{color:var(--faint);opacity:.6;font-size:10.5px;font-weight:400}
+.f:hover input{outline:1px dashed rgba(37,99,235,.55);outline-offset:-1px}
+.f input:focus{outline:2px solid var(--blue);background:var(--blue-soft)}
+@keyframes flash{0%{background:rgba(37,99,235,.25)}100%{background:transparent}}
+.f.flash input{animation:flash 1.3s ease-out}
+
+/* bitmap del codice (BAR) — moltiplica, proporzioni corrette, non interattivo */
+.f.bar{pointer-events:none}
+.f.bar img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+
+/* spunte — nero, piccole */
+.f.ck{cursor:pointer}
+.f.ck svg{position:absolute;inset:12%;width:76%;height:76%;overflow:visible}
+.f.ck path{fill:none;stroke:var(--ink2);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .28s ease .04s}
+.f.ck.on path{stroke-dashoffset:0}
+.f.ck:hover{outline:1px dashed rgba(37,99,235,.55);outline-offset:2px}
+
+/* ── modal ── */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:rgba(16,24,40,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s;overflow:auto}
+.modal.show{opacity:1;pointer-events:auto}
+.m-card{width:min(560px,92vw);background:#fff;border-radius:14px;padding:32px 34px 24px;text-align:center;margin:20px auto;
+  box-shadow:0 30px 70px rgba(16,24,40,.4);transform:translateY(16px) scale(.97);transition:transform .3s cubic-bezier(.22,1,.36,1)}
+.modal.show .m-card{transform:none}
+.m-badge{width:58px;height:58px;margin:0 auto 14px;border-radius:14px;background:var(--blue);color:#fff;
+  display:grid;place-items:center;font:800 15px "Sora";box-shadow:0 10px 22px rgba(37,99,235,.4);animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.m-card h2{margin:0 0 6px;font:800 22px "Sora";letter-spacing:-.02em}
+.m-card>p{margin:0 0 20px;color:var(--mut);font-size:13.5px}
+.m-drop{border:2px dashed #c3cdd9;border-radius:11px;padding:26px 18px;transition:.2s;cursor:pointer}
+.m-drop.over{border-color:var(--blue);background:var(--blue-soft)}
+.m-drop .dd{font:600 14px "Sora";margin:0 0 4px}
+.m-drop small{color:var(--faint);font-size:12px}
+.m-drop .btn{margin-top:12px}
+.m-status{margin-top:14px;font:400 12px/1.6 "IBM Plex Mono",monospace;color:var(--mut);min-height:18px}
+.m-status.ok{color:#067647}
+.m-status.err{color:#d92d20}
+.m-status .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--blue);
+  border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.m-dump{text-align:left;margin-top:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.m-dump summary{cursor:pointer;font:600 11.5px "IBM Plex Sans";letter-spacing:.04em;color:var(--mut);padding:9px 12px}
+.m-dump pre{margin:0;padding:0 12px 12px;font:400 11px/1.7 "IBM Plex Mono",monospace;color:var(--ink2);white-space:pre-wrap;max-height:220px;overflow:auto}
+.m-skip{margin-top:16px;background:none;border:0;color:var(--mut);font:500 12.5px "IBM Plex Sans";text-decoration:underline;text-underline-offset:3px}
+.m-skip:hover{color:var(--blue)}
+.m-skip.primlink{color:#fff;background:var(--blue);text-decoration:none;border-radius:8px;padding:10px 20px;font:600 13px "Sora"}
+
+/* ── statusbar / toast ── */
+.statusbar{display:flex;gap:22px;align-items:center;padding:9px 26px;border-top:1px solid var(--line);background:#fff;
+  font:400 11px "IBM Plex Mono",monospace;color:var(--mut);flex-wrap:wrap}
+.ver{color:var(--blue);font-weight:500}
+.statusbar .fname{margin-left:auto;color:var(--ink)}
+.statusbar .fname b{color:var(--blue);font-weight:500}
+#toast{position:fixed;right:24px;bottom:24px;z-index:70;background:var(--ink);color:#fff;padding:12px 18px;
+  border-radius:9px;border-left:4px solid var(--blue);font:500 13px "IBM Plex Sans";box-shadow:0 14px 34px rgba(16,24,40,.35);
+  transform:translateY(16px);opacity:0;transition:.3s;pointer-events:none;max-width:70vw}
+#toast.show{transform:none;opacity:1}
+
+@media (max-width:960px){main{grid-template-columns:1fr}.statusbar .hint{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo"><i class="l1"></i><i class="l2"></i></div>
+    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v9</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="src" id="src"><span class="dot"></span><b id="srcName">nessun PDF importato</b></div>
+  <button class="btn ghost" id="btnImport">⤓ Importa PDF</button>
+  <button class="btn ghost" id="btnClear">Svuota</button>
+  <button class="btn prim" id="btnExport">Esporta PDF ↗</button>
+</header>
+
+<main>
+  <section class="panel" id="pn-fronte">
+    <div class="ph"><span class="tag">Fronte</span><span class="info" id="info-fronte">fronte.png</span>
+      <span class="warn" id="warn-fronte" hidden>⚠ non ancora memorizzata</span>
+      <button data-side="fronte" class="swap">Sostituisci</button></div>
+    <div class="sheet-zone">
+      <div class="slot" id="slot-fronte">
+        <p class="big">fronte.png non trovata</p>
+        <p>Caricala una volta: verrà memorizzata e usata<br>sempre in automatico, anche per l'export.</p>
+        <button class="btn prim" data-side="fronte">Carica fronte…</button>
+      </div>
+      <div class="sheet" id="sheet-fronte" hidden>
+        <img id="img-fronte" alt="Fronte"><div class="ov" id="ov-fronte"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="pn-retro">
+    <div class="ph"><span class="tag">Retro</span><span class="info" id="info-retro">retro.png</span>
+      <span class="warn" id="warn-retro" hidden>⚠ non ancora memorizzata</span>
+      <button data-side="retro" class="swap">Sostituisci</button></div>
+    <div class="sheet-zone">
+      <div class="slot" id="slot-retro">
+        <p class="big">retro.png non trovata</p>
+        <p>Caricala una volta: verrà memorizzata e usata<br>sempre in automatico, anche per l'export.</p>
+        <button class="btn prim" data-side="retro">Carica retro…</button>
+      </div>
+      <div class="sheet" id="sheet-retro" hidden>
+        <img id="img-retro" alt="Retro"><div class="ov" id="ov-retro"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="statusbar">
+  <span class="ver">v9</span>
+  <span class="hint">✎ compila i riquadri · ✓ clic sulle caselle · il codice bitmap viene estratto dal PDF e fuso in moltiplica</span>
+  <span class="fname">il PDF verrà salvato come <b id="fname">CAD.pdf</b></span>
+</div>
+
+<div class="modal show" id="modal">
+  <div class="m-card">
+    <div class="m-badge">PDF</div>
+    <h2>Importa il PDF della notifica</h2>
+    <p>Leggo le due pagine ed estraggo automaticamente codice dell'invio, numero atto,<br>data, destinatario, indirizzo e il codice bitmap. Ogni importazione riparte da zero.</p>
+    <div class="m-drop" id="mDrop">
+      <p class="dd">Trascina qui il PDF</p>
+      <small>oppure</small><br>
+      <button class="btn prim">Sfoglia file…</button>
+    </div>
+    <div class="m-status" id="mStatus"></div>
+    <details class="m-dump" id="mDumpWrap" hidden>
+      <summary>righe estratte dal PDF (debug)</summary>
+      <pre id="mDump"></pre>
+    </details>
+    <button class="m-skip" id="mSkip">salta e compila manualmente</button>
+  </div>
+</div>
+
+<input type="file" id="fPdf" accept="application/pdf,.pdf" hidden>
+<input type="file" id="fImg" accept="image/*" multiple hidden>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ============ campi — posizioni definitive e bloccate ============ */
+const CODICE={n:"Codice dell'invio",x:18.02,y:24.70,w:46.58,h:7.20};
+const FRONT=[
+  {n:"Destinazione - riga 1",x:37.06,y:52.05,w:38.13,h:6.76},
+  {n:"riga 2",x:37.21,y:59.52,w:38.05,h:6.90},
+  {n:"riga 3",x:36.76,y:66.98,w:38.57,h:6.48},
+  {n:"riga 4",x:36.76,y:73.74,w:38.49,h:7.18},
+  {n:"riga 5",x:36.69,y:81.35,w:38.64,h:6.62},
+  {n:"riga 6",x:36.98,y:88.25,w:38.35,h:6.90},
+];
+const RETRO=[
+  {n:"Atto Numero",x:26.00,y:20.64,w:39.13,h:5.35},
+  {n:"Data - Giorno",x:14.26,y:27.08,w:3.90,h:5.20},
+  {n:"Data - Mese",  x:17.27,y:27.08,w:3.90,h:5.20},
+  {n:"Data Anno",    x:20.41,y:27.08,w:7.20,h:5.20},
+  {n:"Destinatario",x:22.91,y:34.87,w:32.57,h:6.06},
+  {n:"Indirizzo",x:22.40,y:41.07,w:59.57,h:6.48},
+  {n:"CAP / Località / Provincia",x:27.54,y:47.83,w:53.08,h:6.34},
+  {n:"BAR",x:63.20,y:48.53,w:8.01,h:6.48,type:"bitmap"},
+  {n:"GIORNO 2",x:18.74,y:62.18,w:3.60,h:4.80},
+  {n:"MESE 2",  x:21.61,y:62.18,w:3.60,h:4.80},
+  {n:"ANNO 2",  x:25.48,y:62.18,w:8.46,h:4.80},
+  {n:"Spunta - Immessa",x:15.33,y:81.21,w:2.49,h:4.37,type:"spunta"},
+  {n:"SPUNTA - AFFISSA",x:15.33,y:86.99,w:2.71,h:4.51,type:"spunta"},
+  {n:"FIRMA RICEVENTE",x:41.22,y:73.60,w:44.11,h:5.77},
+  {n:"FIRMA DELL'ADDETTO",x:41.22,y:86.28,w:44.62,h:6.20},
+];
+const SIDES={fronte:[CODICE,...FRONT],retro:RETRO};
+const BAR_FIELD=RETRO.find(f=>f.type==="bitmap");
+const DATE_ROWS=[["Data - Giorno","Data - Mese","Data Anno"],["GIORNO 2","MESE 2","ANNO 2"]];
+const DATESET=new Set(DATE_ROWS.flat());
+const REF=900;
+const firma=n=>/firma/i.test(n);
+const centrato=n=>firma(n)||n==="Codice dell'invio";
+const RIGHE=["Destinazione - riga 1","riga 2","riga 3","riga 4","riga 5","riga 6"];
+
+/* ============ stato (solo in memoria) ============ */
+const VALS={},CHECKS={},REG={};
+const BARCODE={url:"",img:null,loaded:null};
+const SAFE={fronte:false,retro:false},MAN={fronte:false,retro:false};
+let SRC="",imgSide=null,needList=[],pendingExport=false;
+
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const san=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase()
+  .replace(/[^A-Z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+const fname=()=>["CAD",san(VALS["Atto Numero"]),san(VALS["Destinatario"])].filter(Boolean).join("_")+".pdf";
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),3600);}
+function updateName(){$("#fname").textContent=fname();}
+
+/* ============ archivio: solo immagini ============ */
+const IDB={db:null,
+  open(){return new Promise(res=>{
+    if(this.db)return res(this.db);
+    try{
+      const rq=indexedDB.open("compilamodulo",1);
+      rq.onupgradeneeded=()=>rq.result.createObjectStore("img");
+      rq.onsuccess=()=>{this.db=rq.result;res(this.db);};
+      rq.onerror=()=>res(null);
+    }catch(e){res(null);}
+  });},
+  async put(k,v){const db=await this.open();if(!db)return;
+    return new Promise(res=>{try{const tx=db.transaction("img","readwrite");
+      tx.objectStore("img").put(v,k);tx.oncomplete=res;tx.onerror=res;}catch(e){res();}});},
+  async get(k){const db=await this.open();if(!db)return null;
+    return new Promise(res=>{try{const rq=db.transaction("img").objectStore("img").get(k);
+      rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>res(null);}catch(e){res(null);}});}
+};
+
+/* ============ costruzione campi (fissi) ============ */
+function applyPos(wrap,f){wrap.style.left=f.x+"%";wrap.style.top=f.y+"%";wrap.style.width=f.w+"%";wrap.style.height=f.h+"%";}
+
+function buildSide(side){
+  const ov=$("#ov-"+side);ov.innerHTML="";
+  SIDES[side].forEach(f=>{
+    const wrap=document.createElement("div");
+    wrap.className="f"+(f.type==="spunta"?" ck":"")+(f.type==="bitmap"?" bar":"");
+    applyPos(wrap,f);
+
+    if(f.type==="spunta"){
+      wrap.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+      wrap.title=f.n+" — clic per spuntare";
+      if(CHECKS[f.n])wrap.classList.add("on");
+      wrap.addEventListener("click",()=>{CHECKS[f.n]=!CHECKS[f.n];wrap.classList.toggle("on",CHECKS[f.n]);});
+    }else if(f.type==="bitmap"){
+      const im=document.createElement("img");
+      im.alt="";
+      if(BARCODE.url)im.src=BARCODE.url;
+      wrap.appendChild(im);
+      REG[f.n]={img:im,wrap};
+    }else{
+      const inp=document.createElement("input");
+      inp.className=centrato(f.n)?"center":"left";
+      inp.placeholder=f.n;inp.title=f.n;inp.value=VALS[f.n]||"";
+      inp.addEventListener("input",()=>{VALS[f.n]=inp.value;updateName();});
+      wrap.appendChild(inp);
+      REG[f.n]={inp,wrap};
+    }
+    REG[f.n]=REG[f.n]||{wrap};
+    ov.appendChild(wrap);
+  });
+}
+function rebuildAll(){buildSide("fronte");buildSide("retro");}
+
+function setVal(n,v){
+  VALS[n]=v||"";
+  const r=REG[n];
+  if(r&&r.inp){r.inp.value=VALS[n];
+    if(v){r.wrap.classList.remove("flash");void r.wrap.offsetWidth;r.wrap.classList.add("flash");}}
+  updateName();
+}
+function clearAll(){
+  Object.keys(VALS).forEach(k=>delete VALS[k]);
+  Object.keys(CHECKS).forEach(k=>delete CHECKS[k]);
+  BARCODE.url="";BARCODE.img=null;BARCODE.loaded=null;
+  rebuildAll();updateName();
+}
+
+/* ============ barcode: auto-fit del riquadro ============ */
+function fitBarBox(){
+  if(!BARCODE.img||!BARCODE.img.naturalWidth)return;
+  const bg=$("#img-retro");
+  if(!bg.naturalWidth)return;
+  const ratio=BARCODE.img.naturalWidth/BARCODE.img.naturalHeight;
+  const cx=BAR_FIELD.x+BAR_FIELD.w/2, cy=BAR_FIELD.y+BAR_FIELD.h/2;
+  let wPct=BAR_FIELD.w;
+  let hPct=(wPct/100*bg.naturalWidth/ratio)/bg.naturalHeight*100;
+  if(hPct>20){hPct=20;wPct=(hPct/100*bg.naturalHeight*ratio)/bg.naturalWidth*100;}
+  BAR_FIELD.w=wPct;BAR_FIELD.h=hPct;
+  BAR_FIELD.x=clamp(cx-wPct/2,0,100-wPct);
+  BAR_FIELD.y=clamp(cy-hPct/2,0,100-hPct);
+  const reg=REG["BAR"];
+  if(reg&&reg.wrap)applyPos(reg.wrap,BAR_FIELD);
+  console.log("BAR: immagine",BARCODE.img.naturalWidth+"×"+BARCODE.img.naturalHeight,
+              "→ box",wPct.toFixed(2)+"×"+hPct.toFixed(2)+"%");
+}
+function setBarcode(cv){
+  if(!cv){BARCODE.url="";BARCODE.img=null;BARCODE.loaded=null;}
+  else{
+    BARCODE.url=cv.toDataURL("image/png");
+    BARCODE.img=new Image();
+    BARCODE.loaded=new Promise(res=>{BARCODE.img.onload=res;BARCODE.img.onerror=res;BARCODE.img.src=BARCODE.url;});
+    BARCODE.loaded.then(fitBarBox);
+  }
+  const r=REG["BAR"];
+  if(r&&r.img){if(BARCODE.url)r.img.src=BARCODE.url;else r.img.removeAttribute("src");}
+}
+
+/* ============ immagini fronte/retro ============ */
+function setImage(side,src,label,safe){
+  const img=$("#img-"+side);
+  img.onload=()=>{
+    $("#slot-"+side).hidden=true;$("#sheet-"+side).hidden=false;
+    $("#info-"+side).textContent=(label||side+".png")+" · "+img.naturalWidth+"×"+img.naturalHeight+" px";
+    SAFE[side]=!!safe;$("#warn-"+side).hidden=!!safe;
+    if(side==="retro")fitBarBox();
+    maybeContinueExport();
+  };
+  img.onerror=()=>{$("#slot-"+side).hidden=false;$("#sheet-"+side).hidden=true;SAFE[side]=false;};
+  img.src=src;
+}
+function tryAutoLoad(side,file){
+  setImage(side,file,file,false);
+  fetch(file).then(r=>{if(!r.ok)throw new Error();return r.blob();})
+    .then(b=>{const rd=new FileReader();
+      rd.onload=()=>{if(!MAN[side]){setImage(side,rd.result,file,true);IDB.put("img-"+side,rd.result);}};
+      rd.readAsDataURL(b);})
+    .catch(()=>{});
+}
+function readImg(side,file){
+  MAN[side]=true;
+  const rd=new FileReader();
+  rd.onload=()=>{setImage(side,rd.result,file.name,true);IDB.put("img-"+side,rd.result);};
+  rd.readAsDataURL(file);
+}
+async function initImages(){
+  for(const side of ["fronte","retro"]){
+    const cached=await IDB.get("img-"+side);
+    if(cached){setImage(side,cached,side+".png (memorizzata)",true);}
+    else tryAutoLoad(side,side+".png");
+  }
+}
+
+document.querySelectorAll(".slot").forEach(sl=>{
+  const side=sl.id.split("-")[1];
+  sl.addEventListener("dragover",e=>{e.preventDefault();sl.classList.add("over");});
+  sl.addEventListener("dragleave",()=>sl.classList.remove("over"));
+  sl.addEventListener("drop",e=>{e.preventDefault();sl.classList.remove("over");
+    const f=e.dataTransfer.files[0];if(f&&f.type.startsWith("image/"))readImg(side,f);});
+  sl.querySelector("button").addEventListener("click",()=>{imgSide=side;needList=[side];$("#fImg").click();});
+});
+document.querySelectorAll(".swap").forEach(b=>b.addEventListener("click",()=>{imgSide=b.dataset.side;needList=[imgSide];$("#fImg").click();}));
+$("#fImg").addEventListener("change",e=>{
+  const files=[...e.target.files];if(!files.length)return;
+  if(files.length===1){
+    const side=imgSide||needList[0];
+    if(side)readImg(side,files[0]);
+  }else{
+    const used=new Set();
+    files.forEach(f=>{const n=f.name.toLowerCase();
+      const side=n.includes("fronte")?"fronte":n.includes("retro")?"retro":null;
+      if(side){readImg(side,f);used.add(f);}});
+    const remain=files.filter(f=>!used.has(f));
+    const side=imgSide||needList[0];
+    if(side&&remain.length)readImg(side,remain[0]);
+  }
+  e.target.value="";
+});
+
+/* ============ parsing PDF ============ */
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc=
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const dateRe=/\b\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}\b/;
+const dateM=/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/;
+const norm=s=>s.replace(/\s+/g,"");
+
+async function parsePDF(buf){
+  if(!window.pdfjsLib)throw new Error("libreria PDF non caricata (serve internet al primo avvio)");
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const pages=[];
+  for(let p=1;p<=Math.min(pdf.numPages,2);p++){
+    const tc=await (await pdf.getPage(p)).getTextContent();
+    const items=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str,x:i.transform[4],y:i.transform[5]}));
+    items.sort((a,b)=>b.y-a.y||a.x-b.x);
+    const rows=[];let cur=null;
+    for(const it of items){
+      if(!cur||Math.abs(it.y-cur.y)>5){cur={y:it.y,its:[]};rows.push(cur);}
+      cur.its.push(it);
+    }
+    pages.push(rows.map(r=>r.its.sort((a,b)=>a.x-b.x).map(i=>i.s.trim())
+      .join(" ").replace(/\s+/g," ").trim()).filter(Boolean));
+  }
+  return {pages,pdf};
+}
+function splitCap(lines){
+  const out=[];
+  for(const l of lines){
+    const m=l.match(/\d{5}\s+(?=[A-ZÀ-Ý])/);
+    if(m&&m.index>0){out.push(l.slice(0,m.index).trim(),l.slice(m.index).trim());}
+    else if(l.trim())out.push(l.trim());
+  }
+  return out.filter(Boolean);
+}
+
+function fillFrom(pages){
+  const p1=[...(pages[0]||[])],p2=[...(pages[1]||[])];
+  const done=[];
+  let iA=p1.findIndex(l=>/^ACA[A-Z0-9]{8,}$/i.test(norm(l)));
+  if(iA<0)iA=p1.findIndex(l=>/^ACA/i.test(norm(l)));
+  let codice="";
+  if(iA>=0)codice=p1.splice(iA,1)[0].trim();else if(p1.length)codice=p1.shift();
+  if(codice){setVal("Codice dell'invio",codice);done.push("codice invio");}
+  const righe=splitCap(p1).slice(0,6);
+  RIGHE.forEach((n,i)=>setVal(n,righe[i]||""));
+  if(righe.length)done.push("destinazione righe 1-"+righe.length);
+  if(p2.length){
+    let iF=p2.findIndex(l=>/^FUA[A-Z0-9]{8,}$/i.test(norm(l)));
+    if(iF<0)iF=p2.findIndex(l=>/^FUA/i.test(norm(l)));
+    if(iF<0)iF=p2.findIndex(l=>!dateRe.test(l));
+    if(iF>=0){setVal("Atto Numero",p2.splice(iF,1)[0].trim());done.push("atto numero");}
+    const iD=p2.findIndex(l=>dateRe.test(l));
+    if(iD>=0){const m=p2[iD].match(dateM);p2.splice(iD,1);
+      if(m){setVal("Data - Giorno",m[1].padStart(2,"0"));setVal("Data - Mese",m[2].padStart(2,"0"));
+        setVal("Data Anno",m[3].length===2?"20"+m[3]:m[3]);done.push("data");}}
+
+    /* ── destinatario / indirizzo / CAP — v9: robusto ── */
+    let rest=p2.map(l=>l.trim()).filter(Boolean);
+    let cap="",via="",dest="";
+    const STR="VIA|VIALE|V\\.LE|PIAZZA|P\\.?ZZA|PIAZZALE|CORSO|C\\.?SO|LARGO|L\\.?GO|VICOLO|STRADA|LOCALIT[ÀA]|LOC\\.|FRAZIONE|FRAZ\\.|LUNGOMARE|LUNGARNO|TRAVERSA|CORTILE|GALLERIA";
+    const splitStr=new RegExp("\\s("+STR+")\\b","i");
+    const viaRe=new RegExp("^("+STR+")\\b","i");
+
+    /* 1) CAP: riga che inizia con 5 cifre */
+    let iC=rest.findIndex(l=>/^\d{5}\b/.test(l));
+    if(iC>=0)cap=rest.splice(iC,1)[0];
+
+    /* 2) CAP attaccato all'indirizzo → spezza */
+    if(!cap){
+      const j=rest.findIndex(l=>/\d{5}\s+[A-ZÀ-Ý]/.test(l));
+      if(j>=0){const l=rest[j],mm=l.match(/\d{5}\s+[A-ZÀ-Ý]/),at=l.indexOf(mm[0]);
+        via=l.slice(0,at).trim();cap=l.slice(at).trim();rest.splice(j,1);}
+    }
+
+    /* 3) se nome e indirizzo sono finiti su una riga unica, separali */
+    const expanded=[];
+    rest.forEach(l=>{
+      const m=l.match(splitStr);
+      if(m&&m.index>0&&/[A-ZÀ-Ý]{3,}/i.test(l.slice(0,m.index)))
+        expanded.push(l.slice(0,m.index).trim(),l.slice(m.index+1).trim());
+      else expanded.push(l);
+    });
+    rest=expanded;
+    if(!cap){
+      const j=rest.findIndex(l=>/^\d{5}\b/.test(l));
+      if(j>=0)cap=rest.splice(j,1)[0];
+    }
+
+    /* 4) Indirizzo: prima chi inizia per parola stradale, poi chi ha il civico */
+    let iV=rest.findIndex(l=>viaRe.test(l));
+    if(iV<0)iV=rest.findIndex(l=>/\d/.test(l));
+    if(iV>=0)via=rest.splice(iV,1)[0];
+
+    /* 5) Destinatario: tra le righe rimaste, l'ultima senza cifre */
+    if(rest.length){
+      let iD=-1;
+      for(let i=rest.length-1;i>=0;i--){if(!/\d/.test(rest[i])){iD=i;break;}}
+      dest=rest.splice(iD>=0?iD:rest.length-1,1)[0];
+    }
+
+    /* 6) fallback: indirizzo non riconosciuto */
+    if(!via&&rest.length)via=rest.pop();
+
+    if(dest){setVal("Destinatario",dest);done.push("destinatario");}
+    if(via){setVal("Indirizzo",via);done.push("indirizzo");}
+    if(cap){setVal("CAP / Località / Provincia",cap);done.push("CAP/località");}
+  }
+  return done;
+}
+
+/* ============ estrazione codice bitmap dal PDF ============ */
+function imgObjToCanvas(img){
+  try{
+    const cv=document.createElement("canvas");
+    if(img.bitmap){
+      cv.width=img.bitmap.width;cv.height=img.bitmap.height;
+      cv.getContext("2d").drawImage(img.bitmap,0,0);
+      return cv;
+    }
+    const w=img.width,h=img.height,d=img.data;
+    if(!w||!h||!d)return null;
+    cv.width=w;cv.height=h;
+    const ctx=cv.getContext("2d");
+    const id=ctx.createImageData(w,h);
+    const kind=img.kind||(d.length===w*h*4?3:(d.length===w*h*3?2:1));
+    if(kind===3){id.data.set(d);}
+    else if(kind===2){
+      for(let i=0,j=0;i<d.length;i+=3,j+=4){
+        id.data[j]=d[i];id.data[j+1]=d[i+1];id.data[j+2]=d[i+2];id.data[j+3]=255;
+      }
+    }else{
+      const rowLen=Math.ceil(w/8);
+      if(d.length>=rowLen*h){
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+          const bit=(d[y*rowLen+(x>>3)]>>(7-(x&7)))&1;
+          const v=bit?0:255,j=(y*w+x)*4;
+          id.data[j]=id.data[j+1]=id.data[j+2]=v;id.data[j+3]=255;
+        }
+      }else{
+        for(let i=0,j=0;i<d.length&&j<id.data.length;i++,j+=4){
+          const v=d[i];id.data[j]=id.data[j+1]=id.data[j+2]=v;id.data[j+3]=255;
+        }
+      }
+    }
+    ctx.putImageData(id,0,0);
+    return cv;
+  }catch(e){return null;}
+}
+function ensureWhiteBg(cv){
+  const ctx=cv.getContext("2d");
+  const d=ctx.getImageData(0,0,cv.width,cv.height);
+  const px=d.data;let sum=0,n=0;
+  for(let i=0;i<px.length;i+=64){sum+=(px[i]+px[i+1]+px[i+2])/3;n++;}
+  if(n&&sum/n<120){
+    for(let i=0;i<px.length;i+=4){px[i]=255-px[i];px[i+1]=255-px[i+1];px[i+2]=255-px[i+2];}
+    ctx.putImageData(d,0,0);
+  }
+}
+function bwScore(cv){
+  const ctx=cv.getContext("2d");
+  const d=ctx.getImageData(0,0,cv.width,cv.height).data;
+  let bw=0,n=0;
+  for(let i=0;i<d.length;i+=16){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    if((r>235&&g>235&&b>235)||(r<50&&g<50&&b<50))bw++;
+    n++;
+  }
+  return n?bw/n:0;
+}
+const withTimeout=(p,ms)=>Promise.race([p,new Promise(res=>setTimeout(()=>res(null),ms))]);
+
+async function findBarcode(pdf){
+  const OPS=pdfjsLib.OPS;
+  const cands=[];
+  for(let p=1;p<=Math.min(pdf.numPages,2);p++){
+    const page=await pdf.getPage(p);
+    const opList=await page.getOperatorList();
+    for(let i=0;i<opList.fnArray.length;i++){
+      const fn=opList.fnArray[i];
+      if(fn!==OPS.paintImageXObject&&fn!==OPS.paintImageXObjectRepeat&&fn!==OPS.paintInlineImageXObject)continue;
+      try{
+        let img=null;
+        if(fn===OPS.paintInlineImageXObject)img=opList.argsArray[i][0];
+        else{
+          const name=opList.argsArray[i][0];
+          img=await withTimeout(new Promise(res=>{try{page.objs.get(name,res);}catch(e){res(null);}}),3000);
+        }
+        if(!img)continue;
+        const cv=imgObjToCanvas(img);
+        if(!cv||cv.width<40||cv.height<40)continue;
+        if(cv.width*cv.height>1500000)continue;
+        ensureWhiteBg(cv);
+        cands.push({cv,score:bwScore(cv),area:cv.width*cv.height});
+      }catch(e){}
+    }
+  }
+  if(!cands.length)return null;
+  cands.sort((a,b)=>b.score-a.score||b.area-a.area);
+  return cands[0].cv;
+}
+
+/* ============ modal / import ============ */
+const modal=$("#modal"),mDrop=$("#mDrop"),mStatus=$("#mStatus"),mSkip=$("#mSkip");
+function closeModal(){modal.classList.remove("show");
+  mSkip.textContent="salta e compila manualmente";mSkip.classList.remove("primlink");}
+$("#btnImport").addEventListener("click",()=>{mStatus.textContent="";mStatus.className="m-status";modal.classList.add("show");});
+mSkip.addEventListener("click",closeModal);
+window.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+mDrop.addEventListener("click",e=>{if(!e.target.closest("button"))$("#fPdf").click();});
+mDrop.querySelector("button").addEventListener("click",e=>{e.stopPropagation();$("#fPdf").click();});
+["dragover","dragleave","drop"].forEach(ev=>mDrop.addEventListener(ev,e=>{
+  e.preventDefault();e.stopPropagation();
+  if(ev==="dragover")mDrop.classList.add("over");else mDrop.classList.remove("over");
+  if(ev==="drop"&&e.dataTransfer.files[0])handlePdf(e.dataTransfer.files[0]);
+}));
+$("#fPdf").addEventListener("change",e=>{if(e.target.files[0])handlePdf(e.target.files[0]);e.target.value="";});
+
+async function handlePdf(file){
+  mStatus.className="m-status";
+  mStatus.innerHTML='<span class="spin"></span>estrazione in corso…';
+  $("#mDumpWrap").hidden=true;
+  try{
+    const buf=await file.arrayBuffer();
+    const {pages,pdf}=await parsePDF(buf);
+    if(!pages.flat().length)throw new Error("nessun testo trovato nel PDF");
+    clearAll();
+    const done=fillFrom(pages);
+    const bar=await findBarcode(pdf);
+    setBarcode(bar);
+    if(bar)done.push("codice bitmap");
+    else console.warn("Nessun codice bitmap trovato nel PDF");
+    SRC=file.name;
+    $("#srcName").textContent=file.name;$("#src").classList.add("ok");
+    mStatus.className="m-status ok";
+    mStatus.textContent="✓ "+(done.length?done.join(" · "):"nessun dato riconosciuto — compila manualmente");
+    $("#mDump").textContent=pages.map((ls,i)=>"— Pagina "+(i+1)+" —\n"+ls.join("\n")).join("\n\n");
+    $("#mDumpWrap").hidden=false;
+    console.log("Righe estratte:",pages);
+    mSkip.textContent="Continua →";mSkip.classList.add("primlink");
+    toast(bar?"Dati estratti da "+file.name:"Dati estratti — codice bitmap non trovato nel PDF");
+  }catch(err){
+    mStatus.className="m-status err";
+    mStatus.textContent="✕ "+(err.message||"errore di lettura");
+  }
+}
+
+/* ============ svuota ============ */
+$("#btnClear").addEventListener("click",()=>{
+  if(!confirm("Svuotare tutti i campi?"))return;
+  clearAll();toast("Campi svuotati");
+});
+
+/* ============ export PDF (~200 dpi) ============ */
+const sheetVisible=s=>!$("#sheet-"+s).hidden;
+function drawCheck(ctx,f,cw,ch){
+  const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
+  const s=0.74,cx=bx+bw/2,cy=by+bh/2;
+  const pt=(px,py)=>[cx+(px-cx)*s,cy+(py-cy)*s];
+  const [x1,y1]=pt(bx+bw*0.12,by+bh*0.55);
+  const [x2,y2]=pt(bx+bw*0.40,by+bh*0.84);
+  const [x3,y3]=pt(bx+bw*0.90,by+bh*0.16);
+  ctx.strokeStyle="#17223a";ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.lineWidth=Math.max(2,bh*0.12);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.stroke();
+}
+function drawDateRows(ctx,side,cw,ch,k){
+  DATE_ROWS.forEach(names=>{
+    const items=[];
+    names.forEach(n=>{const f=SIDES[side].find(x=>x.n===n);if(f)items.push(f);});
+    if(!items.length)return;
+    let fs=13*k;
+    items.forEach(f=>{fs=Math.min(fs,(f.h/100*ch)*0.82);});
+    ctx.font=`500 ${fs}px "IBM Plex Sans",sans-serif`;
+    ctx.fillStyle="#17223a";ctx.textAlign="left";ctx.textBaseline="alphabetic";
+    const cy=Math.max(...items.map(f=>(f.y+f.h/2)/100*ch));
+    const baseline=cy+fs*0.36;
+    items.forEach(f=>{
+      const v=(VALS[f.n]||"").trim();if(!v)return;
+      ctx.fillText(v,(f.x/100*cw)+4*k,baseline);
+    });
+  });
+}
+function drawBitmaps(ctx,side,cw,ch){
+  SIDES[side].forEach(f=>{
+    if(f.type!=="bitmap"||!BARCODE.img||!BARCODE.img.naturalWidth)return;
+    const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
+    const iw=BARCODE.img.naturalWidth,ih=BARCODE.img.naturalHeight;
+    const s=Math.min(bw/iw,bh/ih);
+    const dw=iw*s,dh=ih*s;
+    const dx=bx+(bw-dw)/2,dy=by+(bh-dh)/2;
+    ctx.save();
+    ctx.globalCompositeOperation="multiply";
+    ctx.drawImage(BARCODE.img,dx,dy,dw,dh);
+    ctx.restore();
+  });
+}
+function renderSide(side){
+  const img=$("#img-"+side);
+  if(!sheetVisible(side)||!img.naturalWidth)return null;
+  const natW=img.naturalWidth,natH=img.naturalHeight;
+  const sc=Math.min(200/96,4200/natW);
+  const cw=Math.round(natW*sc),ch=Math.round(natH*sc);
+  const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
+  const ctx=cv.getContext("2d");
+  ctx.drawImage(img,0,0,cw,ch);
+  const k=cw/REF;
+  SIDES[side].forEach(f=>{
+    if(DATESET.has(f.n)||f.type==="bitmap")return;
+    if(f.type==="spunta"){if(CHECKS[f.n])drawCheck(ctx,f,cw,ch);return;}
+    const v=(VALS[f.n]||"").trim();if(!v)return;
+    const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
+    let fs=13*k;fs=Math.min(fs,bh*0.82);
+    ctx.font=`500 ${fs}px "IBM Plex Sans",sans-serif`;
+    ctx.fillStyle="#17223a";
+    ctx.textBaseline="middle";
+    const y=by+bh/2+fs*0.05;
+    if(centrato(f.n)){ctx.textAlign="center";ctx.fillText(v,bx+bw/2,y);}
+    else{ctx.textAlign="left";ctx.fillText(v,bx+4*k,y);}
+  });
+  drawDateRows(ctx,side,cw,ch,k);
+  drawBitmaps(ctx,side,cw,ch);
+  return {cv,w:natW,h:natH};
+}
+async function doExport(){
+  const btn=$("#btnExport");btn.disabled=true;btn.textContent="Genero…";
+  try{
+    await document.fonts.load('500 16px "IBM Plex Sans"');
+    await document.fonts.ready;
+    if(BARCODE.loaded)await BARCODE.loaded;
+    const p1=renderSide("fronte"),p2=renderSide("retro");
+    if(!p1&&!p2){toast("Carica prima le immagini fronte/retro");return;}
+    if(typeof window.jspdf==="undefined")throw new Error("libreria jsPDF non caricata");
+    const {jsPDF}=window.jspdf;let doc;
+    [p1,p2].filter(Boolean).forEach(pg=>{
+      const wpt=pg.w*0.75,hpt=pg.h*0.75,o=wpt>=hpt?"l":"p";
+      if(!doc)doc=new jsPDF({orientation:o,unit:"pt",format:[wpt,hpt]});
+      else doc.addPage([wpt,hpt],o);
+      doc.addImage(pg.cv.toDataURL("image/jpeg",0.95),"JPEG",0,0,wpt,hpt);
+    });
+    doc.save(fname());
+    toast("PDF esportato: "+fname());
+  }catch(err){toast("Errore export: "+err.message);}
+  finally{btn.disabled=false;btn.textContent="Esporta PDF ↗";}
+}
+function maybeContinueExport(){
+  if(!pendingExport)return;
+  const need=["fronte","retro"].filter(s=>sheetVisible(s)&&!SAFE[s]);
+  if(!need.length){pendingExport=false;doExport();}
+}
+$("#btnExport").addEventListener("click",()=>{
+  const loaded=["fronte","retro"].filter(sheetVisible);
+  if(!loaded.length){toast("Carica prima le immagini fronte/retro");return;}
+  const need=loaded.filter(s=>!SAFE[s]);
+  if(need.length){
+    pendingExport=true;needList=need;imgSide=null;
+    toast("Prima volta: seleziona "+need.join(" e ")+". Verranno memorizzate e non sarà più chiesto.");
+    $("#fImg").click();
+    return;
+  }
+  doExport();
+});
+
+/* ============ avvio ============ */
+buildSide("fronte");
+buildSide("retro");
+initImages();
+updateName();
+</script>
+</body>
+</html>
